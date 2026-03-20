@@ -621,7 +621,7 @@ async def main():
                     if isinstance(auction_slots, dict):
                         for bp in auction_slots.get("biddingPlans", []):
                             bp_slots = bp.get("slots", [])
-                            auction_free = sum(1 for s in bp_slots if s.get("canBid"))
+                            auction_free = sum(1 for s in bp_slots if s.get("status") != "occupied")
                             plan_data.append({"name": bp.get("name", "ATLAS AUCTION"), "total": len(bp_slots), "free": auction_free})
                     ingest_status(plan_data, attempts, avg)
 
