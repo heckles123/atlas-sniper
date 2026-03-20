@@ -536,8 +536,8 @@ async def main():
                     if isinstance(all_plans_data, list):
                         for p in all_plans_data:
                             combined.append({"name": p.get("name"), "free": p.get("maxSlots",0) - p.get("currentSlots",0), "total": p.get("maxSlots",0)})
-                    # Add auction slots
-                    auction_free = sum(1 for s in slots if s.get("canBid"))
+                    # Add auction slots — free = slots where status is not occupied
+                    auction_free = sum(1 for s in slots if s.get("status") != "occupied")
                     combined.append({"name": "ATLAS AUCTION", "total": len(slots), "free": auction_free})
                     ingest_status(combined, attempts, avg)
 
