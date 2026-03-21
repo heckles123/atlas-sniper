@@ -482,12 +482,15 @@ async def main():
         print()
         log("Monitoring…  Ctrl+C to stop\n", Fore.GREEN, "info")
 
+        # Send initial heartbeat immediately on startup
+        ingest_heartbeat()
+
         while not purchased:
             attempts += 1
             t_start = time.monotonic()
 
-            # Heartbeat every 30 checks
-            if attempts % 30 == 0:
+            # Heartbeat every 10 checks
+            if attempts % 10 == 0:
                 ingest_heartbeat()
 
             # ── AUCTION MODE ─────────────────────────────────
@@ -526,8 +529,8 @@ async def main():
 
                 log(f"#{attempts} [{last_ms:.0f}ms]  ATLAS AUCTION — " + "   ".join(parts))
 
-                # Ingest status every 10 checks — always include ALL plans
-                if attempts % 10 == 0:
+                # Ingest status every 3 checks — always include ALL plans
+                if attempts % 3 == 0:
                     avg = sum(ms_samples) / len(ms_samples) if ms_samples else last_ms
                     slot_data = [{"name": f"Slot#{s.get('slotNumber')}", "free": 1 if s.get("canBid") else 0, "total": 1} for s in slots]
                     # Also fetch regular plans to include in full status
@@ -612,8 +615,8 @@ async def main():
                 if len(ms_samples) > 50:
                     ms_samples.pop(0)
 
-                # Ingest status every 10 checks — always include ALL plans + auction
-                if attempts % 10 == 0:
+                # Ingest status every 3 checks — always include ALL plans + auction
+                if attempts % 3 == 0:
                     avg = sum(ms_samples) / len(ms_samples) if ms_samples else last_ms
                     plan_data = [{"name": p.get("name"), "free": p.get("maxSlots",0) - p.get("currentSlots",0), "total": p.get("maxSlots",0)} for p in plans]
                     # Also fetch auction slots
