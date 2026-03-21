@@ -83,6 +83,7 @@ except ImportError:
 def _ingest_fire(payload: dict):
     """Send payload to ingest endpoint in background thread."""
     if not INGEST_URL:
+        print(f"[INGEST] INGEST_URL not set — skipping", flush=True)
         return
     import urllib.request
     try:
@@ -93,9 +94,11 @@ def _ingest_fire(payload: dict):
             headers={"Content-Type": "application/json"},
             method="POST",
         )
-        urllib.request.urlopen(req, timeout=5)
-    except Exception:
-        pass
+        resp = urllib.request.urlopen(req, timeout=5)
+        if payload.get("type") == "status":
+            print(f"[INGEST] status sent OK ({resp.status})", flush=True)
+    except Exception as e:
+        print(f"[INGEST] ERROR: {e}", flush=True)
 
 def ingest_log(msg: str, level: str = "info"):
     ts   = datetime.now().strftime("%H:%M:%S")
