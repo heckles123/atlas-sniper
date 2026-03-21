@@ -538,10 +538,13 @@ async def main():
                     combined = []
                     if isinstance(all_plans_data, list):
                         for p in all_plans_data:
-                            combined.append({"name": p.get("name"), "free": p.get("maxSlots",0) - p.get("currentSlots",0), "total": p.get("maxSlots",0)})
+                            combined.append({"name": p.get("name"), "free": p.get("maxSlots",0) - p.get("currentSlots",0), "total": p.get("maxSlots",0), "nextSlotAvailable": p.get("nextSlotAvailable")})
                     # Free only if nobody is occupying the slot
                     auction_free = sum(1 for s in slots if not s.get("occupiedBy") and not s.get("occupiedByUserId"))
-                    combined.append({"name": "ATLAS AUCTION", "total": len(slots), "free": auction_free})
+                    # Soonest expiring auction slot
+                    expiries = [s.get("availableAt") for s in slots if s.get("availableAt")]
+                    next_expiry = min(expiries) if expiries else None
+                    combined.append({"name": "ATLAS AUCTION", "total": len(slots), "free": auction_free, "nextSlotAvailable": next_expiry})
                     ingest_status(combined, attempts, avg)
 
                 if not state.initialized:
@@ -618,15 +621,17 @@ async def main():
                 # Ingest status every 3 checks — always include ALL plans + auction
                 if attempts % 3 == 0:
                     avg = sum(ms_samples) / len(ms_samples) if ms_samples else last_ms
-                    plan_data = [{"name": p.get("name"), "free": p.get("maxSlots",0) - p.get("currentSlots",0), "total": p.get("maxSlots",0)} for p in plans]
+                    plan_data = [{"name": p.get("name"), "free": p.get("maxSlots",0) - p.get("currentSlots",0), "total": p.get("maxSlots",0), "nextSlotAvailable": p.get("nextSlotAvailable")} for p in plans]
                     # Also fetch auction slots
                     auction_slots, _ = await api_get(http, "/bidding-plans")
                     if isinstance(auction_slots, dict):
                         for bp in auction_slots.get("biddingPlans", []):
                             bp_slots = bp.get("slots", [])
-                            # Free only if nobody is occupying the slot
                             auction_free = sum(1 for s in bp_slots if not s.get("occupiedBy") and not s.get("occupiedByUserId"))
-                            plan_data.append({"name": bp.get("name", "ATLAS AUCTION"), "total": len(bp_slots), "free": auction_free})
+                            # Find the soonest expiring slot
+                            expiries = [s.get("availableAt") for s in bp_slots if s.get("availableAt")]
+                            next_expiry = min(expiries) if expiries else None
+                            plan_data.append({"name": bp.get("name", "ATLAS AUCTION"), "total": len(bp_slots), "free": auction_free, "nextSlotAvailable": next_expiry})
                     ingest_status(plan_data, attempts, avg)
 
                 # Discord status embed
