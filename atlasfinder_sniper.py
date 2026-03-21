@@ -624,7 +624,13 @@ async def main():
                 # Ingest status every 3 checks — always include ALL plans + auction
                 if attempts % 3 == 0:
                     avg = sum(ms_samples) / len(ms_samples) if ms_samples else last_ms
-                    plan_data = [{"name": p.get("name"), "free": p.get("maxSlots",0) - p.get("currentSlots",0), "total": p.get("maxSlots",0), "nextSlotAvailable": p.get("nextSlotAvailable")} for p in plans]
+                    plan_data = []
+                    for p in plans:
+                        nsa = p.get("nextSlotAvailable") or p.get("next_slot_available") or p.get("nextAvailable")
+                        free = p.get("maxSlots",0) - p.get("currentSlots",0)
+                        if attempts <= 6:  # debug first 2 status sends
+                            log(f"  Plan {p.get('name')}: nextSlotAvailable={nsa} keys={list(p.keys())}", Fore.CYAN)
+                        plan_data.append({"name": p.get("name"), "free": free, "total": p.get("maxSlots",0), "nextSlotAvailable": nsa})
                     # Also fetch auction slots
                     auction_slots, _ = await api_get(http, "/bidding-plans")
                     if isinstance(auction_slots, dict):
