@@ -536,8 +536,8 @@ async def main():
                     if isinstance(all_plans_data, list):
                         for p in all_plans_data:
                             combined.append({"name": p.get("name"), "free": p.get("maxSlots",0) - p.get("currentSlots",0), "total": p.get("maxSlots",0)})
-                    # Add auction slots — free only if no occupant and status not occupied/bidding
-                    auction_free = sum(1 for s in slots if s.get("status") not in ("occupied", "bidding") and not s.get("occupiedBy"))
+                    # Free only if nobody is occupying the slot
+                    auction_free = sum(1 for s in slots if not s.get("occupiedBy") and not s.get("occupiedByUserId"))
                     combined.append({"name": "ATLAS AUCTION", "total": len(slots), "free": auction_free})
                     ingest_status(combined, attempts, avg)
 
@@ -621,11 +621,8 @@ async def main():
                     if isinstance(auction_slots, dict):
                         for bp in auction_slots.get("biddingPlans", []):
                             bp_slots = bp.get("slots", [])
-                            # Debug: log what status values we're seeing
-                            for s in bp_slots:
-                                log(f"  Auction slot #{s.get('slotNumber')} status='{s.get('status')}' canBid={s.get('canBid')} occupiedBy={s.get('occupiedBy')}", Fore.CYAN)
-                            # A slot is free only if it has no occupant AND status is not occupied/bidding
-                            auction_free = sum(1 for s in bp_slots if s.get("status") not in ("occupied", "bidding") and not s.get("occupiedBy"))
+                            # Free only if nobody is occupying the slot
+                            auction_free = sum(1 for s in bp_slots if not s.get("occupiedBy") and not s.get("occupiedByUserId"))
                             plan_data.append({"name": bp.get("name", "ATLAS AUCTION"), "total": len(bp_slots), "free": auction_free})
                     ingest_status(plan_data, attempts, avg)
 
